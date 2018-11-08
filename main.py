@@ -1,9 +1,6 @@
 from load_csv import DataSet
 from plotter import Plotter
 
-def kfold():
-    pass
-
 
 if __name__ == '__main__':
     print("start")
