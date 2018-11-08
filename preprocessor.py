@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 LEAST_DISTINCT_VALUE = 20
 
-
 def check_unique_values(data):
     if data.ndim == 1:
         print(np.unique(data).size)

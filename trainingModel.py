@@ -48,7 +48,6 @@ def k_fold(x, y, func, K, **kwargs):
             best_k = i
     return best_k, min_error
 
-
 if __name__ == '__main__':
     model = linear_model.LinearRegression()
     from load_csv import DataSet
