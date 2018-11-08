@@ -5,7 +5,13 @@ MODEL_LIST = [
     "polynomial",
     "ridge",
     "lasso",
-    "kNN"
+    "kNN",
+    "SVM",
+    "naive bayes",
+    "random forest",
+    "decision tree",
+    "logistic regression",
+    "gradient boosting"
 ]
 
 
