@@ -26,10 +26,10 @@ def calculate_error(y, yhat, method='mae'):
     return None
 
 
-def set_model(modelType):
-    if modelType == 'Linear':
+def set_model(model):
+    if model == 'Linear':
         return LinearRegression()
-    elif modelType == "Ridge":
+    elif model == "Ridge":
         return Ridge()
     return Lasso()
 
