@@ -1,4 +1,4 @@
-import numpy as np
+# import numpy as np
 import pandas as pd
 LEAST_DISTINCT_VALUE = 20
 
@@ -6,7 +6,7 @@ LEAST_DISTINCT_VALUE = 20
 def check_unique_values(data):
     for i in data:
         print(i)
-        print(np.unique(data[i]).size)
+        # print(np.unique(data[i]).size)
 
 
 def one_hot_encode(raw_data, debug=False):
@@ -20,13 +20,13 @@ def one_hot_encode(raw_data, debug=False):
         else:
             new_data = pd.concat([new_data, col], axis=1)
     if debug:
-        print(new_data.dtypes)
         new_data.info()
+        print(new_data.shape)
     return new_data
 
 
 if __name__ == '__main__':
     from load_csv import DataSet
     data = DataSet()
-    # check_unique_values(data.get_testX_pd())
-    one_hot_encode(data.get_testX_pd(), True)
+    check_unique_values(data.get_testX_pd())
+    one_hot_encode(data.get_trainX_pd(), True)
