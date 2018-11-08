@@ -3,10 +3,19 @@ from load_csv import DataSet
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = DataSet()
+"""
 
+Class: Plotter
+Description: Contains methods to plot and visualize data features.
+Featured charts are: Histogram, Bar Chart, Scatter Plot, Line Plot
 
+Version: 1.0.0
+
+"""
 class Plotter:
+
+    def __init__(self):
+        self.data = DataSet()
 
     def visualizeBarChart(self, featureName, XLabel, YLabel) :
         """
@@ -18,7 +27,7 @@ class Plotter:
         :param YLabel: Label for Y axis
         :return: Bar Chart
         """
-        feature, counts = np.unique(data.loc[:, featureName], return_counts=True)
+        feature, counts = np.unique(self.data.loc[:, featureName], return_counts=True)
         plt.bar(feature, counts)
         plt.xlabel(XLabel)
         plt.ylabel(YLabel)
@@ -37,7 +46,7 @@ class Plotter:
         :return: Scatter Plot
         """
 
-        plt.scatter(data.loc[:, featureName], data.loc[:, labelName])
+        plt.scatter(self.data.loc[:, featureName], self.data.loc[:, labelName])
         plt.xlabel(XLabel)
         plt.ylabel(YLabel)
         plt.title(featureName + " Scatter Plot")
@@ -55,7 +64,7 @@ class Plotter:
         :return: Histogram
         """
 
-        plt.hist(data.loc[:, featureName], bins=binNum)
+        plt.hist(self.data.loc[:, featureName], bins=binNum)
         plt.xlabel(XLabel)
         plt.ylabel(YLabel)
         plt.title(featureName)
