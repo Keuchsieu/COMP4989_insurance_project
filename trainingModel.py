@@ -1,5 +1,12 @@
 from sklearn import linear_model
 import numpy as np
+MODEL_LIST = [
+    "linear",
+    "polynomial",
+    "ridge",
+    "lasso",
+    "kNN"
+]
 
 
 def calculate_error(y, yhat, method='mae'):
