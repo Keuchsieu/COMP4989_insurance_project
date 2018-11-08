@@ -1,11 +1,21 @@
-from sklearn import linear_model
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
+from sklearn.linear_model import Lasso
 import numpy as np
+
 MODEL_LIST = [
-    "linear",
-    "polynomial",
-    "ridge",
-    "lasso",
-    "kNN"
+    "Linear",
+    "Polynomial",
+    "Ridge",
+    "Lasso",
+    "kNN",
+    "SVM",
+    "naive bayes",
+    "random forest",
+    "decision tree",
+    "logistic regression",
+    "gradient boosting",
+    "ANN --our saviour"
 ]
 
 
@@ -14,6 +24,14 @@ def calculate_error(y, yhat, method='mae'):
         mae = np.mean(np.abs(y - yhat))
         return mae
     return None
+
+
+def set_model(model):
+    if model == 'Linear':
+        return LinearRegression()
+    elif model == "Ridge":
+        return Ridge()
+    return Lasso()
 
 
 def k_fold(x, y, K, func=None, model=None, **kwargs):
@@ -55,9 +73,9 @@ def k_fold(x, y, K, func=None, model=None, **kwargs):
 
 
 if __name__ == '__main__':
-    lin_model = linear_model.LinearRegression()
+    model = set_model("Linear")
 
     from load_csv import DataSet
     data = DataSet()
-    bk, me = k_fold(data.get_testX(), data.get_trainY(), K=10, model=lin_model)
+    bk, me = k_fold(data.get_testX(), data.get_trainY(), K=10, model=model)
     print(bk, me)

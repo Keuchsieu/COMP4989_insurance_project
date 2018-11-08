@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-
 def check_unique_values(data):
     if data.ndim == 1:
         print(np.unique(data).size)
