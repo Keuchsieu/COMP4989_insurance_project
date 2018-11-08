@@ -1,12 +1,15 @@
-# import numpy as np
+import numpy as np
 import pandas as pd
 LEAST_DISTINCT_VALUE = 20
 
 
 def check_unique_values(data):
-    for i in data:
-        print(i)
-        # print(np.unique(data[i]).size)
+    if data.ndim == 1:
+        print(np.unique(data).size)
+    else:
+        for i in data:
+            print(i)
+            print(np.unique(data[i]).size)
 
 
 def one_hot_encode(raw_data, debug=False):
@@ -14,7 +17,8 @@ def one_hot_encode(raw_data, debug=False):
     for data in raw_data:
         col_type = raw_data[data].dtype
         col = raw_data[data]
-        if col_type == 'object' or col.nunique() < LEAST_DISTINCT_VALUE:
+        # it might matter when we don't one hot code the column where there are only 2 values
+        if col_type == 'object' or (col.nunique() < LEAST_DISTINCT_VALUE and col.nunique() != 2):
             one_hot = pd.get_dummies(col, prefix=data)
             new_data = pd.concat([new_data, one_hot], axis=1)
         else:
@@ -28,5 +32,5 @@ def one_hot_encode(raw_data, debug=False):
 if __name__ == '__main__':
     from load_csv import DataSet
     data = DataSet()
-    check_unique_values(data.get_testX_pd())
+    check_unique_values(data.get_trainY())
     one_hot_encode(data.get_trainX_pd(), True)

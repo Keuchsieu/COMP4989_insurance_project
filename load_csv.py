@@ -9,6 +9,10 @@ class DataSet:
         self.trainingX = training.drop(['rowIndex', 'ClaimAmount'], 1)  # dropping label column and index
         self.trainingY = training['ClaimAmount']  # getting only label column
         self.testingX = testset.drop(['rowIndex'], 1)  # drop row index
+        self.no_claim_X = 0
+        self.no_claim_Y = 0
+        self.claim_X = 0
+        self.claim_Y = 0
 
     def get_trainX(self):
         return np.array(self.trainingX)
