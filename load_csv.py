@@ -4,11 +4,13 @@ import numpy as np
 
 class DataSet:
     def __init__(self):
-        training = pd.read_csv('./datasets/trainingset.csv')
+        self.training = pd.read_csv('./datasets/trainingset.csv')
         testset = pd.read_csv('./datasets/testset.csv')
-        self.trainingX = training.drop(['rowIndex', 'ClaimAmount'], 1)  # dropping label column and index
-        self.trainingY = training['ClaimAmount']  # getting only label column
+        self.trainingX = self.training.drop(['rowIndex', 'ClaimAmount'], 1)  # dropping label column and index
+        self.trainingY = self.training['ClaimAmount']  # getting only label column
         self.testingX = testset.drop(['rowIndex'], 1)  # drop row index
+        self.no_claims = self.training[self.training['ClaimAmount'] == 0]
+        self.claims = self.training[self.training['ClaimAmount'] != 0]
         self.no_claim_X = 0
         self.no_claim_Y = 0
         self.claim_X = 0
