@@ -9,6 +9,9 @@ MODEL_LIST = [
     "Polynomial",
     "Ridge",
     "Lasso",
+]
+
+SUPPLEMENT_MODELS = [
     "kNN",
     "SVM",
     "naive bayes",
@@ -78,8 +81,6 @@ def k_fold(x, y, K, func=None, model=None, **kwargs):
     """
     data_length = x.shape[0]
     chunk = int(data_length / K)
-    min_error = -1
-    best_k = 0
     errors = []
     for i in range(K):
         x_cv = []  # one chunk size of x
@@ -100,20 +101,24 @@ def k_fold(x, y, K, func=None, model=None, **kwargs):
             y_hat = model.predict(x_cv)
         error = calculate_error(y_cv, y_hat, **kwargs)
         errors.append(error)
-        if min_error == -1 or error < min_error:
-            min_error = error
-            best_k = i
     average_error = np.mean(errors)
-    return best_k, min_error, average_error
+    return average_error
 
 
 if __name__ == '__main__':
-    model = set_model("Linear")
-
     from load_csv import DataSet
     data = DataSet()
-    #bk, me = k_fold(data.get_testX(), data.get_trainY(), K=10, model=model)
-    #print(bk, me)
-
-    bk, me, average = k_fold(data.get_trainX(), data.get_trainY(), K=10, func=modified_knn, method='knn')
-    print("Best K fold group number {}, min error: {}, average error {}".format(bk, me, average))
+    # x_train = data.get_trainX()
+    x_train = data.get_noClaimX()
+    # y_train = data.get_trainY()
+    y_train = data.get_noClaimY()
+    errors_cred = []
+    for model_name in MODEL_LIST:
+        print('Trying model: '+model_name)
+        model = set_model(model_name)
+        model_error = k_fold(x_train, y_train, 10, model=model)
+        errors_cred.append({
+            'model_mae': model_error,
+            'model_name': model_name
+        })
+        print('Model mae {} for model {}'.format(model_error, model_name))
