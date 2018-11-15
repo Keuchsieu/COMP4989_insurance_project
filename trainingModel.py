@@ -3,6 +3,7 @@ from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
+import itertools
 
 MODEL_LIST = [
     "Linear",
@@ -105,13 +106,7 @@ def k_fold(x, y, K, func=None, model=None, **kwargs):
     return average_error
 
 
-if __name__ == '__main__':
-    from load_csv import DataSet
-    data = DataSet()
-    # x_train = data.get_trainX()
-    x_train = data.get_noClaimX()
-    # y_train = data.get_trainY()
-    y_train = data.get_noClaimY()
+def do_the_loop(x_train, y_train, features):
     errors_cred = []
     for model_name in MODEL_LIST:
         print('Trying model: '+model_name)
@@ -121,4 +116,33 @@ if __name__ == '__main__':
             'model_mae': model_error,
             'model_name': model_name
         })
-        print('Model mae {} for model {}'.format(model_error, model_name))
+        print('Model mae {} for model {} of feature {}'.format(model_error, model_name, features))
+
+
+if __name__ == '__main__':
+    from load_csv import DataSet
+    data = DataSet()
+    col_names = list(data.get_testX_pd())
+    # print(col_names)
+    x_train = data.get_trainX()
+    # x_train = data.get_noClaimX()
+    y_train = data.get_trainY()
+    # y_train = data.get_noClaimY()
+
+    for i in range(1, x_train.shape[1]+1):
+        combies = itertools.combinations(col_names, i)
+        print('loop iteration {}'.format(i))
+        # combies are list of combinations of i elements
+        for combi in combies:
+            x_selected = []
+            for element in combi:
+                index = col_names.index(element)  # find the index of this feature
+                x_feature = x_train[:, [index]]  # get the column vector
+                if x_selected == []:
+                    x_selected = x_feature
+                else:
+                    np.concatenate((x_selected, x_feature), axis=1)
+            # after for loop, the selected feature should be in x selected list
+            do_the_loop(x_selected, y_train, combi)
+
+
