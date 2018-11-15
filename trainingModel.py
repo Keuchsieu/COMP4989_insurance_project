@@ -42,13 +42,13 @@ def k_fold(x, y, K, func=None, model=None, **kwargs):
     :param func: the function that runs the validation training and predicting
     :param model: a model from sklearn that fit() and predict()
     :param kwargs: arguments that functions differently for different model
-    :return: the error rate of the data
+    :return: the error rate of the data and the best-k fold value
     """
     data_length = x.shape[0]
     chunk = int(data_length / K)
     min_error = -1
     best_k = 0
-    for i in range(K):
+    for i in range(1, K):
         x_cv = []  # one chunk size of x
         y_cv = []
         Xtrain = []
@@ -73,9 +73,9 @@ def k_fold(x, y, K, func=None, model=None, **kwargs):
 
 
 if __name__ == '__main__':
-    model = set_model("Linear")
+    model = set_model("Ridge")
 
     from load_csv import DataSet
     data = DataSet()
-    bk, me = k_fold(data.get_testX(), data.get_trainY(), K=10, model=model)
+    bk, me = k_fold(data.get_trainX(), data.get_trainY(), K=10, model=model)
     print(bk, me)
