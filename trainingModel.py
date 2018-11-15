@@ -3,6 +3,7 @@ from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
+import xlsxwriter # write to excel spreadsheet
 
 MODEL_LIST = [
     "Linear",
@@ -81,7 +82,7 @@ def k_fold(x, y, K, func=None, model=None, **kwargs):
     min_error = -1
     best_k = 0
     errors = []
-    for i in range(K):
+    for i in range(1,K):
         x_cv = []  # one chunk size of x
         y_cv = []
         Xtrain = []
@@ -108,12 +109,39 @@ def k_fold(x, y, K, func=None, model=None, **kwargs):
 
 
 if __name__ == '__main__':
-    model = set_model("Linear")
+
+    model = set_model("Linear") 
+    method = 'mae' # change the method (or function) ex. mae or kNN
+    modelName = "Linear"
 
     from load_csv import DataSet
     data = DataSet()
-    #bk, me = k_fold(data.get_testX(), data.get_trainY(), K=10, model=model)
-    #print(bk, me)
 
-    bk, me, average = k_fold(data.get_trainX(), data.get_trainY(), K=10, func=modified_knn, method='knn')
-    print("Best K fold group number {}, min error: {}, average error {}".format(bk, me, average))
+    workbook = xlsxwriter.Workbook('results.xlsx')
+    worksheet = workbook.add_worksheet()
+    bold = workbook.add_format({'bold': True})
+    worksheet.write('A1', 'Model', bold)
+    worksheet.write('B1', 'K.F Rnge', bold)
+    worksheet.write('C1', 'Best K.F', bold)
+    worksheet.write('D1', 'Found', bold)
+    worksheet.write('E1', 'Avg. Error', bold)
+    worksheet.write('F1', 'Min. Error', bold)
+
+    k_values = [10,20,30] # K-Folds ranges you wish to use
+    models = [set_model("Linear"), set_model("Ridge"), set_model("Lasso")] # change the models
+    modelsNames = ["Linear", "Ridge", "Lasso"] # for the excel file
+
+    for i in range(len(models)):
+
+        for j in range(len(k_values)):
+
+            bk, me, average = k_fold(data.get_trainX(), data.get_trainY(), K=k_values[j], model=models[i], method=method)
+            print("Best K fold group number {}, min error: {}, average error {}".format(bk, me, average))
+            worksheet.write('A' + str((i*3) + (j+2)), modelsNames[i])
+            worksheet.write('B' + str((i*3) + (j+2)), k_values[i])
+            worksheet.write('C' + str((i*3) + (j+2)), bk)
+            worksheet.write('D' + str((i*3) + (j+2)), method)
+            worksheet.write('E' + str((i*3) + (j+2)), average)
+            worksheet.write('F' + str((i*3) + (j+2)), me)
+
+    workbook.close()
