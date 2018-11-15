@@ -9,9 +9,9 @@ class DataSet:
         self.trainingX = self.training.drop(['rowIndex', 'ClaimAmount'], 1)  # dropping label column and index
         self.trainingY = self.training['ClaimAmount']  # getting only label column
         self.testingX = testset.drop(['rowIndex'], 1)  # drop row index
-        self.no_claims = self.training[self.training['ClaimAmount'] == 0] # get the samples with no claims
-        self.claims = self.training[self.training['ClaimAmount'] != 0] # get the samples with claims
-        self.no_claim_X = self.no_claims.drop(['rowIndex', 'ClaimAmount'], 1) # repeat above for this data-set
+        self.no_claims = self.training[self.training['ClaimAmount'] == 0]  # get the samples with no claims
+        self.claims = self.training[self.training['ClaimAmount'] != 0]  # get the samples with claims
+        self.no_claim_X = self.no_claims.drop(['rowIndex', 'ClaimAmount'], 1)  # repeat above for this data-set
         self.no_claim_Y = self.no_claims['ClaimAmount']
         self.claim_X = self.claims.drop(['rowIndex', 'ClaimAmount'], 1)
         self.claim_Y = self.claims['ClaimAmount']
