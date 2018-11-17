@@ -6,9 +6,10 @@ from datetime import datetime as time
 import os
 
 UPPER = 10
-LOWER = 2
+LOWER = 3
 NEIGHBOR = 3
 KFOLD = 10
+lambda_p = -4
 
 data = DataSet()
 # all training features, all being np array
@@ -33,7 +34,8 @@ testX = {
     'raw': data.get_testX()
 }
 
-model = LinearRegression()
+# model = LinearRegression()
+model = Lasso(alpha=10**lambda_p)
 knc = KNeighborsClassifier(n_neighbors=NEIGHBOR)
 
 
@@ -99,13 +101,14 @@ def k_fold(x, y, K):
 data_type = ['raw', 'onehot']
 
 for t in data_type:
-    print("Average error of {} data: {}".format(t, k_fold(trainX[t], trainY['raw'], KFOLD)))
+    error = k_fold(trainX[t], trainY['raw'], KFOLD)
+    print("Average error of {} data: {}".format(t, error))
     pred_test = my_train_predic(trainX[t], trainY['raw'], testX[t])
 
     file_dir = './predictions/'
     print(np.array(pred_test).shape)
     now = time.now()
-    result_file_name = '{}_result_{}_{}_{}_{}.csv'.format(t, now.date(), now.hour, now.minute, now.second)
+    result_file_name = 'lasso_p{}_{:.2f}_{}_result_{}{}{}.csv'.format(lambda_p,error, t, now.date(), now.hour, now.minute)
     with open(os.path.join(file_dir, result_file_name), 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(pred_test)

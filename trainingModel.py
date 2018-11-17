@@ -7,9 +7,9 @@ import itertools
 
 MODEL_LIST = [
     "Linear",
-    "Polynomial",
-    "Ridge",
-    "Lasso",
+    # "Polynomial",
+    # "Ridge",
+    # "Lasso",
 ]
 
 SUPPLEMENT_MODELS = [
@@ -114,9 +114,11 @@ def feature_loop(x_train, y_train, features):
         model_error = k_fold(x_train, y_train, 10, model=model)
         errors_cred.append({
             'model_mae': model_error,
-            'model_name': model_name
+            'model_name': model_name,
+            'features': features
         })
         print('Model mae {} for model {} of feature {}'.format(model_error, model_name, features))
+    return errors_cred
 
 
 if __name__ == '__main__':
@@ -128,7 +130,10 @@ if __name__ == '__main__':
     # x_train = data.get_noClaimX()
     y_train = data.get_trainY()
     # y_train = data.get_noClaimY()
-
+    big_records = []
+    min_error = -1
+    best_model = ''
+    best_features = ''
     for i in range(1, x_train.shape[1]+1):
         combies = itertools.combinations(col_names, i)
         print('loop iteration {}'.format(i))
@@ -143,6 +148,14 @@ if __name__ == '__main__':
                 else:
                     np.concatenate((x_selected, x_feature), axis=1)
             # after for loop, the selected feature should be in x selected list
-            do_the_loop(x_selected, y_train, combi)
+            one_record = feature_loop(x_selected, y_train, combi)
+            big_records.append(one_record)
+    for feature in big_records:
+        for one in feature:
+            if min_error == -1 or one['model_mae'] < min_error:
+                min_error = one['model_mae']
+                best_features = one['features']
+                best_model = one['model_name']
+
 
 
