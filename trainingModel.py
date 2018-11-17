@@ -7,9 +7,9 @@ import itertools
 
 MODEL_LIST = [
     "Linear",
-    # "Polynomial",
-    # "Ridge",
-    # "Lasso",
+    "Polynomial",
+    "Ridge",
+    "Lasso",
 ]
 
 SUPPLEMENT_MODELS = [
@@ -156,6 +156,6 @@ if __name__ == '__main__':
                 min_error = one['model_mae']
                 best_features = one['features']
                 best_model = one['model_name']
-
+    print("best model {} with features {} has min error at {}".format(best_model, best_features, min_error))
 
 
