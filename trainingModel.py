@@ -106,7 +106,7 @@ def k_fold(x, y, K, func=None, model=None, **kwargs):
     return average_error
 
 
-def do_the_loop(x_train, y_train, features):
+def feature_loop(x_train, y_train, features):
     errors_cred = []
     for model_name in MODEL_LIST:
         print('Trying model: '+model_name)
