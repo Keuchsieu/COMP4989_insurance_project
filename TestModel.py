@@ -9,7 +9,7 @@ import numpy as np
 
 class TestModel:
 
-    def __init__(self, ohe=(2, 10), features='all',
+    def __init__(self, ohe=(0, 0), features='all',
                  classify=True, knn=11, model='Linear',
                  m_alpha=1, poly_p=1, k_fold=10):
         """
@@ -31,7 +31,7 @@ class TestModel:
         self.data = DataSet()
         self.y_train = self.data.get_trainY()
         # modify features used in model, pre-processing
-        if ohe != (0,0):
+        if ohe != (0, 0):
             self.x_train_all = one_hot_encode(self.data.get_trainX_pd(), lower_limit=ohe[0], upper_limit=ohe[1])
             self.x_test_all = one_hot_encode(self.data.get_testX_pd())
             self.model_name += "_L{}U{}".format(ohe[0], ohe[1])
@@ -72,6 +72,9 @@ class TestModel:
             return self.model_name + '_unpredicted'
         else:
             return self.model_name + '_{:.4f}'.format(self.prediction)
+
+    def __add__(self, other):
+        return self.__str__() + str(other)
 
     def predict_test(self):
         # fit the entire training sets
@@ -132,7 +135,22 @@ class TestModel:
 
 
 if __name__ == '__main__':
-    x = TestModel(ohe=(0, 0))
+    """
+    USAGE of TestModel:
+    1. Construct model with values you want, please check constructor to see what options do we have now
+    2. Use get_mae() to get K fold mae result, and use this to compare with other models you created
+    3. (optional) If the model is good compared with other model, run predict_test() to get the vector of prediction
+       on the test set.
+    4. (optional) Output the prediction file into ./predictions/ folder, 
+       rename it to testsetassessment_group_subnumber.csv and upload to d2l folder.
+       AND complete the model_completion google sheet to record it
+    """
+    x = TestModel()
     error = x.get_mae()
+    pred_test = x.predict_test()
     print("{} with MAE: {}".format(x, error))
-    pass
+    import csv, os
+    file_dir = './predictions/'
+    with open(os.path.join(file_dir, x + '.csv'), 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(pred_test)
