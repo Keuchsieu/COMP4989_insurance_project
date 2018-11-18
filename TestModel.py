@@ -21,6 +21,7 @@ class TestModel:
         :param model: String, regression model selected for training
         :param m_alpha: lambda used in Ridge and Lasso models
         :param poly_p: useful only when it is not 1, will create polynomial model based on given value
+        :param k_fold: number of k folds to test with
         """
         self.model_name = "{}_{}_{}lambda_{}p_{}NN_{}fold".format(
             model, ('cls' if classify else 'ncls'),
