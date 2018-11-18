@@ -19,8 +19,8 @@ class TestModel:
         :param classify: Boolean, if use classify before regression
         :param knn: knn value for classification
         :param model: String, regression model selected for training
-        :param m_alpha:
-        :param poly_p:
+        :param m_alpha: lambda used in Ridge and Lasso models
+        :param poly_p: useful only when it is not 1, will create polynomial model based on given value
         """
         self.model_name = "{}_{}_{}lambda_{}p_{}NN_{}fold".format(
             model, ('cls' if classify else 'ncls'),
