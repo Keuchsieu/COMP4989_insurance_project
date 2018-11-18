@@ -11,6 +11,13 @@ def check_unique_values(data):
 
 
 def one_hot_encode(raw_data, upper_limit=20,lower_limit=0, debug=False):
+    """
+    :param raw_data: data frame to be one hot encoded
+    :param upper_limit: upper limit of how many unique data to OHE
+    :param lower_limit: lower limit of how many unique data to OHE
+    :param debug: if running in debug mode
+    :return: new data as data frame
+    """
     new_data = pd.DataFrame({})
     for data in raw_data:
         col_type = raw_data[data].dtype

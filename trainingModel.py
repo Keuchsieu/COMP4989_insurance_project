@@ -3,12 +3,16 @@ from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
+import itertools
 
 MODEL_LIST = [
     "Linear",
     "Polynomial",
     "Ridge",
     "Lasso",
+]
+
+SUPPLEMENT_MODELS = [
     "kNN",
     "SVM",
     "naive bayes",
@@ -24,15 +28,16 @@ def calculate_error(y, yhat, method='mae'):
     if method == 'mae':
         mae = np.mean(np.abs(y - yhat))
         return mae
+    elif method == 'knn':
+        y_local = y
+        for i in range(len(y)):
+            if y[i] > 0:
+                y_local[i] = 1
+            else:
+                y_local[i] = int(y[i])
+        return np.mean(np.abs(y_local-yhat))
+    # return none if the method is not specified above
     return None
-
-def calculate_error_knn(y, yhat):
-    for i in range(len(y)):
-        if y[i] > 0:
-            y[i] = 1
-        else:
-            y[i] = int(y[i])
-    return np.mean(np.abs(y-yhat))
 
 
 def set_model(model_type):
@@ -41,7 +46,8 @@ def set_model(model_type):
     elif model_type == "Ridge":
         return Ridge()
     elif model_type == "kNN":
-        return modified_knn()
+        pass  # the function is not a model, it returns prediction
+        # return modified_knn()
     return Lasso()
 
 
@@ -76,8 +82,7 @@ def k_fold(x, y, K, func=None, model=None, **kwargs):
     """
     data_length = x.shape[0]
     chunk = int(data_length / K)
-    min_error = -1
-    best_k = 0
+    errors = []
     for i in range(K):
         x_cv = []  # one chunk size of x
         y_cv = []
@@ -90,26 +95,67 @@ def k_fold(x, y, K, func=None, model=None, **kwargs):
             else:
                 Xtrain.append(x[j])
                 Ytrain.append(y[j])
-        #if func:
-        y_hat = modified_knn(x_cv, Xtrain, Ytrain, **kwargs)
-        #else:
-            #model.fit(Xtrain, Ytrain)
-            #y_hat = model.predict(x_cv)
-        #error = calculate_error(y_cv, y_hat)
-        error = calculate_error_knn(y_cv, y_hat)
-        if min_error == -1 or error < min_error:
-            min_error = error
-            best_k = i
-    return best_k, min_error
+        if func:  # if predicting using a written function
+            y_hat = func(x_cv, Xtrain, Ytrain, **kwargs)
+        else:  # if training a model from sklearn
+            model.fit(Xtrain, Ytrain)
+            y_hat = model.predict(x_cv)
+        error = calculate_error(y_cv, y_hat, **kwargs)
+        errors.append(error)
+    average_error = np.mean(errors)
+    return average_error
+
+
+def feature_loop(x_train, y_train, features):
+    errors_cred = []
+    for model_name in MODEL_LIST:
+        print('Trying model: '+model_name)
+        model = set_model(model_name)
+        model_error = k_fold(x_train, y_train, 10, model=model)
+        errors_cred.append({
+            'model_mae': model_error,
+            'model_name': model_name,
+            'features': features
+        })
+        print('Model mae {} for model {} of feature {}'.format(model_error, model_name, features))
+    return errors_cred
 
 
 if __name__ == '__main__':
-    model = set_model("Linear")
-
     from load_csv import DataSet
     data = DataSet()
-    #bk, me = k_fold(data.get_testX(), data.get_trainY(), K=10, model=model)
-    #print(bk, me)
+    col_names = list(data.get_testX_pd())
+    # print(col_names)
+    x_train = data.get_trainX()
+    # x_train = data.get_noClaimX()
+    y_train = data.get_trainY()
+    # y_train = data.get_noClaimY()
+    big_records = []
+    min_error = -1
+    best_model = ''
+    best_features = ''
+    for i in range(1, x_train.shape[1]+1):
+        combies = itertools.combinations(col_names, i)
+        print('loop iteration {}'.format(i))
+        # combies are list of combinations of i elements
+        for combi in combies:
+            x_selected = []
+            for element in combi:
+                index = col_names.index(element)  # find the index of this feature
+                x_feature = x_train[:, [index]]  # get the column vector
+                if x_selected == []:
+                    x_selected = x_feature
+                else:
+                    np.concatenate((x_selected, x_feature), axis=1)
+            # after for loop, the selected feature should be in x selected list
+            one_record = feature_loop(x_selected, y_train, combi)
+            big_records.append(one_record)
+    for feature in big_records:
+        for one in feature:
+            if min_error == -1 or one['model_mae'] < min_error:
+                min_error = one['model_mae']
+                best_features = one['features']
+                best_model = one['model_name']
+    print("best model {} with features {} has min error at {}".format(best_model, best_features, min_error))
 
-    bk, me = k_fold(data.get_testX(), data.get_trainY(), K=10)
-    print(bk, me)
+

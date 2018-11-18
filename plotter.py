@@ -36,8 +36,8 @@ class Plotter:
         else:
             feature, counts = np.unique(self.data.get_trainX_pd().loc[:, feature_name], return_counts=True)
         plt.bar(feature, counts)
-        plt.x_label(x_label)
-        plt.y_label(y_label)
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
         plt.title(feature_name + " Bar Chart")
         plt.show()
 
@@ -57,8 +57,8 @@ class Plotter:
         else:
             feature = self.data.get_trainX_pd().loc[:, feature_name]
         plt.scatter(feature, label_name)
-        plt.x_label(x_label)
-        plt.y_label(y_label)
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
         plt.title(feature_name + " Scatter Plot")
         plt.show()
 
@@ -78,9 +78,9 @@ class Plotter:
             plt.hist(data.get_trainX_pd().loc[:, feature_name], bins=bin_num)
         else:
             plt.hist(self.data.get_trainX_pd().loc[:, feature_name], bins=bin_num)
-        plt.x_label(x_label)
-        plt.y_label(y_label)
-        plt.title(feature_name)
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.title(feature_name + "Histogram")
         plt.show()
 
     def visualize_line(self, values, feature_name, x_label, y_label, data=None):
@@ -99,8 +99,8 @@ class Plotter:
             plt.plot(values, data.get_trainX_pd().loc[:, feature_name])
         else:
             plt.plot(values, self.data.get_trainX_pd().loc[:, feature_name])
-        plt.x_label(x_label)
-        plt.y_label(y_label)
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
         plt.title("Line Plot")
         plt.show()
 
