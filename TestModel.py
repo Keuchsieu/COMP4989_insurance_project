@@ -146,12 +146,11 @@ if __name__ == '__main__':
        rename it to testsetassessment_group_subnumber.csv and upload to d2l folder.
        AND complete the model_completion google sheet to record it
     """
-    x = TestModel()
+    x = TestModel(features=('feature17', 'feature2', 'feature13', 'feature4', 'feature7'), classify=True)
     error = x.get_mae()
     pred_test = x.predict_test()
     print("{} with MAE: {}".format(x, error))
-    import csv, os
-    file_dir = './predictions/'
-    with open(os.path.join(file_dir, x + '.csv'), 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(pred_test)
+    from FileWriter import FileWriter
+    print(pred_test.shape)
+    w = FileWriter(file_name='ss', data=pred_test)
+    w.write()
