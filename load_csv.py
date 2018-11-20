@@ -5,10 +5,10 @@ import numpy as np
 class DataSet:
     def __init__(self):
         self.training = pd.read_csv('./datasets/trainingset.csv')
-        testset = pd.read_csv('./datasets/testset.csv')
+        self.testset = pd.read_csv('./datasets/testset.csv')
         self.trainingX = self.training.drop(['rowIndex', 'ClaimAmount'], 1)  # dropping label column and index
         self.trainingY = self.training['ClaimAmount']  # getting only label column
-        self.testingX = testset.drop(['rowIndex'], 1)  # drop row index
+        self.testingX = self.testset.drop(['rowIndex'], 1)  # drop row index
         self.no_claims = self.training[self.training['ClaimAmount'] == 0] # get the samples with no claims
         self.claims = self.training[self.training['ClaimAmount'] != 0] # get the samples with claims
         self.no_claim_X = self.no_claims.drop(['rowIndex', 'ClaimAmount'], 1) # repeat above for this data-set
