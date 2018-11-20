@@ -152,5 +152,5 @@ if __name__ == '__main__':
     print("{} with MAE: {}".format(x, error))
     from FileWriter import FileWriter
     print(pred_test.shape)
-    w = FileWriter(file_name='ss', data=pred_test)
+    w = FileWriter(file_name=x, data=pred_test)
     w.write()
