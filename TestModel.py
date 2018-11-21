@@ -151,8 +151,8 @@ if __name__ == '__main__':
        rename it to testsetassessment_group_subnumber.csv and upload to d2l folder.
        AND complete the model_completion google sheet to record it
     """
-    x = TestModel(features=('feature17', 'feature2', 'feature13', 'feature4', 'feature7'), classify=True)
-    error = x.get_mae()
+    x = TestModel(features=('feature1', 'feature3'), classify=True, classifier='svc', c_var=0.01, k_fold=2)
+    error = x.get_mae(debug=True)
     pred_test = x.predict_test()
     print("{} with MAE: {}".format(x, error))
     from FileWriter import FileWriter
