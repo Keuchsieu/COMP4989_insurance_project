@@ -1,6 +1,7 @@
 from load_csv import DataSet
 from preprocessor import one_hot_encode
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
@@ -10,22 +11,23 @@ import numpy as np
 class TestModel:
 
     def __init__(self, ohe=(0, 0), features='all',
-                 classify=True, knn=11, model='Linear',
+                 classify=True, classifier='svc', c_var=1, model='Linear',
                  m_alpha=1, poly_p=1, k_fold=10):
         """
         Constructor of test model
         :param ohe: Boolean, if want to one hot encode
         :param features: Tuple/list of String,features selected to train
         :param classify: Boolean, if use classify before regression
-        :param knn: knn value for classification
+        :param classifier: String, classification model selected for training
+        :param c_var: value used in the classification model
         :param model: String, regression model selected for training
         :param m_alpha: lambda used in Ridge and Lasso models
         :param poly_p: useful only when it is not 1, will create polynomial model based on given value
         :param k_fold: number of k folds to test with
         """
-        self.model_name = "{}_{}_{}lambda_{}p_{}NN_{}fold".format(
-            model, ('cls' if classify else 'ncls'),
-            m_alpha, poly_p, knn, k_fold)
+        self.model_name = "{}_{}_{}_{}cvar_{}lambda_{}p_{}fold".format(
+            model, ('cls' if classify else 'ncls'), classifier,
+            c_var, m_alpha, poly_p,  k_fold)
         self.classify = classify
         self.prediction = -1
         self.k_fold = k_fold
@@ -61,8 +63,11 @@ class TestModel:
             self.model = LinearRegression()
         if poly_p != 1:  # polynomial feature if wanted
             self.model = make_pipeline(PolynomialFeatures(poly_p), self.model)
-        # K Neighbor Model setup
-        self.knc = KNeighborsClassifier(n_neighbors=knn)
+        # Classification Model setup
+        if classifier == 'knn':
+            self.classifier = KNeighborsClassifier(n_neighbors=c_var)
+        if classifier == 'svc':
+            self.classifier = SVC(C=c_var, kernel='linear')
 
     def __str__(self):
         """
@@ -84,8 +89,8 @@ class TestModel:
             y_class = []
             for val in self.y_train:
                 y_class.append(0 if val == 0 else 1)
-            self.knc.fit(self.x_train, y_class)
-            return self.knc.predict(self.x_test) * self.model.predict(self.x_test)
+            self.classifier.fit(self.x_train, y_class)
+            return self.classifier.predict(self.x_test) * self.model.predict(self.x_test)
         else:
             return self.model.predict(self.x_test)
 
@@ -124,8 +129,8 @@ class TestModel:
                 y_class = []
                 for val in y_train:
                     y_class.append(0 if val == 0 else 1)
-                self.knc.fit(x_train, y_class)
-                y_hat *= self.knc.predict(x_cv)
+                self.classifier.fit(x_train, y_class)
+                y_hat *= self.classifier.predict(x_cv)
             mae = np.mean(np.abs(np.subtract(y_hat, y_cv)))
             errors.append(mae)
         if debug:
