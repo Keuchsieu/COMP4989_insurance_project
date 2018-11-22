@@ -16,6 +16,12 @@ class DataSet:
         self.claim_X = self.claims.drop(['rowIndex', 'ClaimAmount'], 1)
         self.claim_Y = self.claims['ClaimAmount']
 
+    def get_col_names(self):
+        return list(self.trainingX)
+
+    def get_trainx_by_feature(self, features):
+        return np.array(self.trainingX.loc[:, features])
+
     def get_trainX(self):
         return np.array(self.trainingX)
 
