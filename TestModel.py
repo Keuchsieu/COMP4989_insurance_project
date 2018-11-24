@@ -11,7 +11,7 @@ import numpy as np
 class TestModel:
 
     def __init__(self, ohe=(0, 0), features='all',
-                 classify=True, classifier='svc', c_var=1, model='Linear',
+                 classify=True, classifier='knn', c_var=1, model='Linear',
                  m_alpha=1, poly_p=1, k_fold=10):
         """
         Constructor of test model
