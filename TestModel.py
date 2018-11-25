@@ -5,13 +5,17 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
+from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import tree
 import numpy as np
 
 
 class TestModel:
 
     def __init__(self, ohe=(0, 0), features='all',
-                 classify=True, classifier='svc', c_var=1, model='Linear',
+                 classify=True, classifier='knn', c_var=1, model='Linear',
                  m_alpha=1, poly_p=1, k_fold=10):
         """
         Constructor of test model
@@ -66,8 +70,20 @@ class TestModel:
         # Classification Model setup
         if classifier == 'knn':
             self.classifier = KNeighborsClassifier(n_neighbors=c_var)
-        if classifier == 'svc':
+        elif classifier == 'svc':
             self.classifier = SVC(C=c_var, kernel='linear')
+        elif classifier == 'gnb':
+            self.classifier = GaussianNB()
+        elif classifier == 'mnb':
+            self.classifier = MultinomialNB()
+        elif classifier == 'bnb':
+            self.classifier = BernoulliNB()
+        elif classifier == 'lr':
+            self.classifier = LogisticRegression(C=c_var)
+        elif classifier == 'tree':
+            self.classifier = tree.DecisionTreeClassifier()
+        elif classifier == 'rfc':
+            self.classifier = RandomForestClassifier(n_estimators=c_var)
 
     def __str__(self):
         """
@@ -208,13 +224,13 @@ if __name__ == '__main__':
        rename it to testsetassessment_group_subnumber.csv and upload to d2l folder.
        AND complete the model_completion google sheet to record it
     """
-    x = TestModel(features=('feature1', 'feature3', 'feature14'), classify=True, classifier='knn', c_var=5, k_fold=10)
-    # error = x.get_mae(debug=True)
-    error = x.get_f1()
-    # pred_test = x.predict_test()
-    # print("{} with MAE: {}".format(x, error))
-    print("{} with F1: {}".format(x, error))
-    # from FileWriter import FileWriter
-    # print(pred_test.shape)
-    # w = FileWriter(file_name=x, data=pred_test)
-    # w.write()
+    x = TestModel(features=('feature1', 'feature3', 'feature2', 'feature5', 'feature14', 'feature16', 'feature7'), classify=True, classifier='knn', c_var=1, k_fold=10)
+    error = x.get_mae()
+    score = x.get_f1()
+    pred_test = x.predict_test()
+    print("{} with MAE: {}".format(x, error))
+    print("{} with F1: {}".format(x, score))
+    from FileWriter import FileWriter
+    print(pred_test.shape)
+    w = FileWriter(file_name=x, data=pred_test)
+    w.write()
