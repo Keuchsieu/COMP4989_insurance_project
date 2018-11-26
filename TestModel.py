@@ -99,11 +99,11 @@ class TestModel:
                 y_class.append(0 if val == 0 else 1)
             self.classifier.fit(self.x_train, y_class)
             prediction = self.classifier.predict(self.x_test) * self.model.predict(self.x_test)
-            assert max(prediction) == 0
+            assert max(prediction) != 0
             return prediction
         else:
             prediction = self.model.predict(self.x_test)
-            assert max(prediction) == 0
+            assert max(prediction) != 0
             return prediction
 
     def get_mae(self, debug=False):
@@ -170,8 +170,8 @@ if __name__ == '__main__':
        rename it to testsetassessment_group_subnumber.csv and upload to d2l folder.
        AND complete the model_completion google sheet to record it
     """
-    x = TestModel(features=('feature1', 'feature3', 'feature14'), classify=True, classifier='knn', c_var=11)
-    error = x.get_mae(debug=True)
+    x = TestModel(features=('feature1', 'feature2'), class_feature=('feature1', 'feature3', 'feature14'), classify=True, classifier='knn', c_var=1)
+    error = x.get_mae()
 
     pred_test = x.predict_test()
     print("{} with MAE: {}".format(x, error))
