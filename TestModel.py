@@ -5,13 +5,17 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
+from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import tree
 import numpy as np
 
 
 class TestModel:
 
     def __init__(self, ohe=(0, 0), features='all',
-                 classify=True, classifier='svc', c_var=1, model='Linear',
+                 classify=True, classifier='knn', c_var=1, model='Linear',
                  m_alpha=1, poly_p=1, k_fold=10):
         """
         Constructor of test model
@@ -66,8 +70,20 @@ class TestModel:
         # Classification Model setup
         if classifier == 'knn':
             self.classifier = KNeighborsClassifier(n_neighbors=c_var)
-        if classifier == 'svc':
+        elif classifier == 'svc':
             self.classifier = SVC(C=c_var, kernel='linear')
+        elif classifier == 'gnb':
+            self.classifier = GaussianNB()
+        elif classifier == 'mnb':
+            self.classifier = MultinomialNB()
+        elif classifier == 'bnb':
+            self.classifier = BernoulliNB()
+        elif classifier == 'lr':
+            self.classifier = LogisticRegression(C=c_var)
+        elif classifier == 'tree':
+            self.classifier = tree.DecisionTreeClassifier()
+        elif classifier == 'rfc':
+            self.classifier = RandomForestClassifier(n_estimators=c_var)
 
     def __str__(self):
         """
