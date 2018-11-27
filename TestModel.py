@@ -10,8 +10,8 @@ import numpy as np
 
 class TestModel:
 
-    def __init__(self, ohe=(0, 0), features='all',
-                 classify=True, classifier='svc', c_var=1, model='Linear',
+    def __init__(self, ohe=(0, 0), features='all', class_feature='all',
+                 classify=True, classifier='svc', c_var=1.0, model='Linear',
                  m_alpha=1, poly_p=1, k_fold=10):
         """
         Constructor of test model
@@ -25,9 +25,9 @@ class TestModel:
         :param poly_p: useful only when it is not 1, will create polynomial model based on given value
         :param k_fold: number of k folds to test with
         """
-        self.model_name = "{}_{}_{}_{}cvar_{}lambda_{}p_{}fold".format(
+        self.model_name = "{}_{}_{}_{}cvar_{}lambda_{}p_{}fold_clsfe{}".format(
             model, ('cls' if classify else 'ncls'), classifier,
-            c_var, m_alpha, poly_p,  k_fold)
+            c_var, m_alpha, poly_p,  k_fold, class_feature)
         self.classify = classify
         self.prediction = -1
         self.k_fold = k_fold
@@ -46,14 +46,22 @@ class TestModel:
             self.x_train = np.array(self.x_train_all)
             self.x_test = np.array(self.x_test_all)
             self.model_name += "_allFeature"
+
         else:
             self.x_train = np.array(self.x_train_all.loc[:, features])
             self.x_test = np.array(self.x_test_all.loc[:, features])
             for name in features:
                 self.model_name += "_" + name
+        # classify with different feature set
+        if class_feature == 'all':
+            self.x_class = np.array(self.x_train_all)
+        else:
+            self.x_class = np.array(self.x_train_all.loc[:, class_feature])
 
-        assert self.x_train.shape[1] == self.x_test.shape[1], \
-            "Number of features doesn't match between test set({}) and training set({})".format(self.x_train.shape[1], self.x_test.shape[1])
+        # check test set size
+        if features != 'all':
+            assert self.x_train.shape[1] == self.x_test.shape[1], \
+                "Number of features doesn't match between test set({}) and training set({})".format(self.x_train.shape[1], self.x_test.shape[1])
         # Regression Model setup
         if model == 'Ridge':
             self.model = Ridge(alpha=m_alpha)
@@ -90,9 +98,13 @@ class TestModel:
             for val in self.y_train:
                 y_class.append(0 if val == 0 else 1)
             self.classifier.fit(self.x_train, y_class)
-            return self.classifier.predict(self.x_test) * self.model.predict(self.x_test)
+            prediction = self.classifier.predict(self.x_test) * self.model.predict(self.x_test)
+            assert max(prediction) != 0
+            return prediction
         else:
-            return self.model.predict(self.x_test)
+            prediction = self.model.predict(self.x_test)
+            assert max(prediction) != 0
+            return prediction
 
     def get_mae(self, debug=False):
         data_length = self.x_train.shape[0]
@@ -101,36 +113,43 @@ class TestModel:
         for i in range(self.k_fold):
             x_cv = []
             y_cv = []
+            x_cv_class = []
             x_train = []
             y_train = []
+            x_class = []
             # separate cv set and training set
             for j in range(data_length):
                 if debug:
-                    print("j: {}".format(j))
+                    # print("j: {}".format(j))
+                    pass
                 if int(j / chunk) == i:
                     # concatenate entire row
                     x_cv.append(self.x_train[j, :])
                     # concatenate one value
                     y_cv.append(self.y_train[j])
+                    x_cv_class.append(self.x_class[j, :])
                 else:
                     x_train.append(self.x_train[j, :])
                     y_train.append(self.y_train[j])
+                    x_class.append(self.x_class[j, :])
             x_cv = np.array(x_cv)
             y_cv = np.array(y_cv)
             x_train = np.array(x_train)
             y_train = np.array(y_train)
+            x_class = np.array(x_class)
             if debug:
                 print('Iteration {}'
                       '\nShape of x_train: {}'
-                      '\nShape of y_train: {}'.format(i, x_train.shape, y_train.shape))
+                      '\nShape of y_train: {}'
+                      '\nShape of x_class: {}'.format(i, x_train.shape, y_train.shape, x_class.shape))
             self.model.fit(x_train, y_train)
             y_hat = self.model.predict(x_cv)
             if self.classify:
                 y_class = []
                 for val in y_train:
                     y_class.append(0 if val == 0 else 1)
-                self.classifier.fit(x_train, y_class)
-                y_hat *= self.classifier.predict(x_cv)
+                self.classifier.fit(x_class, y_class)
+                y_hat *= self.classifier.predict(x_cv_class)
             mae = np.mean(np.abs(np.subtract(y_hat, y_cv)))
             errors.append(mae)
         if debug:
@@ -151,10 +170,12 @@ if __name__ == '__main__':
        rename it to testsetassessment_group_subnumber.csv and upload to d2l folder.
        AND complete the model_completion google sheet to record it
     """
-    x = TestModel(features=('feature1', 'feature3'), classify=True, classifier='svc', c_var=0.01, k_fold=2)
-    error = x.get_mae(debug=True)
+    x = TestModel(features=('feature1', 'feature2'), class_feature=('feature1', 'feature3', 'feature14'), classify=True, classifier='knn', c_var=1)
+    error = x.get_mae()
+
     pred_test = x.predict_test()
     print("{} with MAE: {}".format(x, error))
+    print("largest of prediction: {}".format(max(pred_test)))
     from FileWriter import FileWriter
     print(pred_test.shape)
     w = FileWriter(file_name=x, data=pred_test)
