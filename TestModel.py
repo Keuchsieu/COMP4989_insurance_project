@@ -5,10 +5,15 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
+from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import tree
 import numpy as np
 
 
 class TestModel:
+
 
     def __init__(self, ohe=(0, 0), features='all', class_feature='all',
                  classify=True, classifier='svc', c_var=1.0, model='Linear',
@@ -74,8 +79,20 @@ class TestModel:
         # Classification Model setup
         if classifier == 'knn':
             self.classifier = KNeighborsClassifier(n_neighbors=c_var)
-        if classifier == 'svc':
+        elif classifier == 'svc':
             self.classifier = SVC(C=c_var, kernel='linear')
+        elif classifier == 'gnb':
+            self.classifier = GaussianNB()
+        elif classifier == 'mnb':
+            self.classifier = MultinomialNB()
+        elif classifier == 'bnb':
+            self.classifier = BernoulliNB()
+        elif classifier == 'lr':
+            self.classifier = LogisticRegression(C=c_var)
+        elif classifier == 'tree':
+            self.classifier = tree.DecisionTreeClassifier()
+        elif classifier == 'rfc':
+            self.classifier = RandomForestClassifier(n_estimators=c_var)
 
     def __str__(self):
         """
@@ -110,6 +127,7 @@ class TestModel:
         data_length = self.x_train.shape[0]
         chunk = int(data_length / self.k_fold)
         errors = []
+        scores = []
         for i in range(self.k_fold):
             x_cv = []
             y_cv = []
@@ -145,18 +163,37 @@ class TestModel:
             self.model.fit(x_train, y_train)
             y_hat = self.model.predict(x_cv)
             if self.classify:
-                y_class = []
+                y_class_train = []
                 for val in y_train:
-                    y_class.append(0 if val == 0 else 1)
-                self.classifier.fit(x_class, y_class)
-                y_hat *= self.classifier.predict(x_cv_class)
+                    y_class_train.append(0 if val == 0 else 1)
+                self.classifier.fit(x_train, y_class_train)
+                y_class_cv = []
+                for val in y_cv:
+                    y_class_cv.append(0 if val == 0 else 1)
+                y_hat = self.classifier.predict(x_cv)
+                true_pos = 0
+                false_pos = 0
+                false_neg = 0
+                for m in range(0, len(y_hat)):
+                    true_pos += 1 if (y_hat[m] == y_class_cv[m] == 1) else 0
+                    false_pos += 1 if (y_hat[m] == 1 and y_class_cv[m] == 0) else 0
+                    false_neg += 1 if (y_hat[m] == 0 and y_class_cv[m] == 1) else 0
+                if true_pos == 0:
+                    scores.append(0)
+                else:
+                    f1_p = true_pos / (true_pos + false_pos)
+                    f1_r = true_pos / (true_pos + false_neg)
+                    f1 = 2 * ((f1_p * f1_r) / (f1_p + f1_r))
+                    scores.append(f1)
+                y_hat *= self.classifier.predict(x_cv)
             mae = np.mean(np.abs(np.subtract(y_hat, y_cv)))
             errors.append(mae)
         if debug:
             print("Size of error: {} should match number of k fold: {}".format(len(errors), self.k_fold))
         kfold_mae = np.mean(errors)
+        kfold_f1 = np.mean(scores)
         self.prediction = kfold_mae
-        return kfold_mae
+        return kfold_mae, kfold_f1
 
 
 if __name__ == '__main__':
@@ -170,12 +207,13 @@ if __name__ == '__main__':
        rename it to testsetassessment_group_subnumber.csv and upload to d2l folder.
        AND complete the model_completion google sheet to record it
     """
-    x = TestModel(features=('feature1', 'feature2'), class_feature=('feature1', 'feature3', 'feature14'), classify=True, classifier='knn', c_var=1)
-    error = x.get_mae()
 
+    x = TestModel(features=('feature1', 'feature3', 'feature14'), classify=True, classifier='knn', c_var=1, k_fold=10)
+    error, score = x.get_mae()
     pred_test = x.predict_test()
     print("{} with MAE: {}".format(x, error))
-    print("largest of prediction: {}".format(max(pred_test)))
+    print("{} with F1: {}".format(x, score))
+
     from FileWriter import FileWriter
     print(pred_test.shape)
     w = FileWriter(file_name=x, data=pred_test)
