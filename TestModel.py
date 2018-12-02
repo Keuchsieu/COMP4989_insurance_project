@@ -5,13 +5,18 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
+from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import tree
 import numpy as np
 
 
 class TestModel:
 
-    def __init__(self, ohe=(0, 0), features='all',
-                 classify=True, classifier='knn', c_var=1, model='Linear',
+
+    def __init__(self, ohe=(0, 0), features='all', class_feature='all',
+                 classify=True, classifier='svc', c_var=1.0, model='Linear',
                  m_alpha=1, poly_p=1, k_fold=10):
         """
         Constructor of test model
@@ -25,9 +30,9 @@ class TestModel:
         :param poly_p: useful only when it is not 1, will create polynomial model based on given value
         :param k_fold: number of k folds to test with
         """
-        self.model_name = "{}_{}_{}_{}cvar_{}lambda_{}p_{}fold".format(
+        self.model_name = "{}_{}_{}_{}cvar_{}lambda_{}p_{}fold_clsfe{}".format(
             model, ('cls' if classify else 'ncls'), classifier,
-            c_var, m_alpha, poly_p,  k_fold)
+            c_var, m_alpha, poly_p,  k_fold, class_feature)
         self.classify = classify
         self.prediction = -1
         self.k_fold = k_fold
@@ -46,14 +51,22 @@ class TestModel:
             self.x_train = np.array(self.x_train_all)
             self.x_test = np.array(self.x_test_all)
             self.model_name += "_allFeature"
+
         else:
             self.x_train = np.array(self.x_train_all.loc[:, features])
             self.x_test = np.array(self.x_test_all.loc[:, features])
             for name in features:
                 self.model_name += "_" + name
+        # classify with different feature set
+        if class_feature == 'all':
+            self.x_class = np.array(self.x_train_all)
+        else:
+            self.x_class = np.array(self.x_train_all.loc[:, class_feature])
 
-        assert self.x_train.shape[1] == self.x_test.shape[1], \
-            "Number of features doesn't match between test set({}) and training set({})".format(self.x_train.shape[1], self.x_test.shape[1])
+        # check test set size
+        if features != 'all':
+            assert self.x_train.shape[1] == self.x_test.shape[1], \
+                "Number of features doesn't match between test set({}) and training set({})".format(self.x_train.shape[1], self.x_test.shape[1])
         # Regression Model setup
         if model == 'Ridge':
             self.model = Ridge(alpha=m_alpha)
@@ -66,8 +79,20 @@ class TestModel:
         # Classification Model setup
         if classifier == 'knn':
             self.classifier = KNeighborsClassifier(n_neighbors=c_var)
-        if classifier == 'svc':
-            self.classifier = SVC(C=c_var, kernel='linear')
+        elif classifier == 'svc':
+            self.classifier = SVC(C=c_var, kernel='rbf')
+        elif classifier == 'gnb':
+            self.classifier = GaussianNB()
+        elif classifier == 'mnb':
+            self.classifier = MultinomialNB()
+        elif classifier == 'bnb':
+            self.classifier = BernoulliNB()
+        elif classifier == 'lr':
+            self.classifier = LogisticRegression(C=c_var)
+        elif classifier == 'tree':
+            self.classifier = tree.DecisionTreeClassifier()
+        elif classifier == 'rfc':
+            self.classifier = RandomForestClassifier(n_estimators=c_var)
 
     def __str__(self):
         """
@@ -90,54 +115,139 @@ class TestModel:
             for val in self.y_train:
                 y_class.append(0 if val == 0 else 1)
             self.classifier.fit(self.x_train, y_class)
-            return self.classifier.predict(self.x_test) * self.model.predict(self.x_test)
+            prediction = self.classifier.predict(self.x_test) * self.model.predict(self.x_test)
+            assert max(prediction) != 0
+            return prediction
         else:
-            return self.model.predict(self.x_test)
+            prediction = self.model.predict(self.x_test)
+            assert max(prediction) != 0
+            return prediction
 
     def get_mae(self, debug=False):
         data_length = self.x_train.shape[0]
         chunk = int(data_length / self.k_fold)
         errors = []
+        scores = []
         for i in range(self.k_fold):
-            x_cv = []
+            x_cv = []  # features of cv on regression
             y_cv = []
-            x_train = []
+            x_cv_class = []  # feature of cv on classification
+            x_train = []  # features selected for regression
             y_train = []
+            x_class = []  # features selected for classification
             # separate cv set and training set
             for j in range(data_length):
                 if debug:
-                    print("j: {}".format(j))
+                    # print("j: {}".format(j))
+                    pass
                 if int(j / chunk) == i:
                     # concatenate entire row
                     x_cv.append(self.x_train[j, :])
                     # concatenate one value
                     y_cv.append(self.y_train[j])
+                    x_cv_class.append(self.x_class[j, :])
                 else:
                     x_train.append(self.x_train[j, :])
                     y_train.append(self.y_train[j])
+                    x_class.append(self.x_class[j, :])
             x_cv = np.array(x_cv)
             y_cv = np.array(y_cv)
             x_train = np.array(x_train)
             y_train = np.array(y_train)
+            x_class = np.array(x_class)
             if debug:
                 print('Iteration {}'
                       '\nShape of x_train: {}'
-                      '\nShape of y_train: {}'.format(i, x_train.shape, y_train.shape))
+                      '\nShape of y_train: {}'
+                      '\nShape of x_class: {}'.format(i, x_train.shape, y_train.shape, x_class.shape))
             self.model.fit(x_train, y_train)
             y_hat = self.model.predict(x_cv)
             if self.classify:
-                y_class = []
+                y_class_train = []
                 for val in y_train:
-                    y_class.append(0 if val == 0 else 1)
-                self.classifier.fit(x_train, y_class)
-                y_hat *= self.classifier.predict(x_cv)
+                    y_class_train.append(0 if val == 0 else 1)
+                self.classifier.fit(x_class, y_class_train)
+                y_class_cv = []
+                for val in y_cv:
+                    y_class_cv.append(0 if val == 0 else 1)
+                y_class_pred = self.classifier.predict(x_cv_class)
+                true_pos = 0
+                false_pos = 0
+                false_neg = 0
+                for m in range(0, len(y_class_pred)):
+                    true_pos += 1 if (y_class_pred[m] == y_class_cv[m] == 1) else 0
+                    false_pos += 1 if (y_class_pred[m] == 1 and y_class_cv[m] == 0) else 0
+                    false_neg += 1 if (y_class_pred[m] == 0 and y_class_cv[m] == 1) else 0
+                f1 = 0
+                if true_pos != 0:
+                    f1_p = true_pos / (true_pos + false_pos)
+                    f1_r = true_pos / (true_pos + false_neg)
+                    f1 = 2 * ((f1_p * f1_r) / (f1_p + f1_r))
+                scores.append(f1)
+                y_hat *= y_class_pred
             mae = np.mean(np.abs(np.subtract(y_hat, y_cv)))
             errors.append(mae)
         if debug:
             print("Size of error: {} should match number of k fold: {}".format(len(errors), self.k_fold))
         kfold_mae = np.mean(errors)
+        kfold_f1 = np.mean(scores)
         self.prediction = kfold_mae
-        return kfold_mae
+        return kfold_mae, kfold_f1
+
+    def get_f1_only(self, debug=False):
+        data_length = self.x_train.shape[0]
+        chunk = int(data_length / self.k_fold)
+        scores = []
+        for i in range(self.k_fold):
+            x_cv_class = []
+            y_cv = []
+            y_train = []
+            x_class = []
+            for j in range(data_length):
+                if int(j / chunk) == i:
+                    x_cv_class.append(self.x_class[j, :])
+                    y_cv.append(self.y_train[j])
+                else:
+                    x_class.append(self.x_class[j, :])
+                    y_train.append(self.y_train[j])
+            x_cv_class = np.array(x_cv_class)
+            y_cv = np.array(y_cv)
+            x_class = np.array(x_class)
+            y_train = np.array(y_train)
+            if debug:
+                print('Iteration {}'
+                      '\nShape of x_train: {}'
+                      '\nshape of y train: {}'
+                      '\nshape of x cv:  {}'.format(i, x_class.shape, y_train.shape, x_cv_class.shape))
+            y_class_train = []
+            for val in y_train:
+                y_class_train.append(0 if val == 0 else 1)
+            self.classifier.fit(x_class, y_class_train)
+            y_class_cv = []
+            for val in y_cv:
+                y_class_cv.append(0 if val == 0 else 1)
+            y_class_pred = self.classifier.predict(x_cv_class)
+            true_pos = 0
+            false_pos = 0
+            false_neg = 0
+            if debug:
+                print("size of predition {}, size of cv {}".format(len(y_class_pred), len(y_class_cv)))
+            for m in range(0, len(y_class_pred)):
+                true_pos += 1 if (y_class_pred[m] == y_class_cv[m] == 1) else 0
+                false_pos += 1 if (y_class_pred[m] == 1 and y_class_cv[m] == 0) else 0
+                false_neg += 1 if (y_class_pred[m] == 0 and y_class_cv[m] == 1) else 0
+            if debug:
+                print("True pos={}, False pos={}, False neg={}".format(true_pos, false_pos, false_neg))
+            f1 = 0
+            if true_pos != 0:
+                f1_p = true_pos / (true_pos + false_pos)
+                f1_r = true_pos / (true_pos + false_neg)
+                f1 = 2 * ((f1_p * f1_r) / (f1_p + f1_r))
+            scores.append(f1)
+        kfold_f1 = np.mean(scores)
+        if debug:
+            print("F1 score is {}".format(kfold_f1))
+        return kfold_f1
 
 
 if __name__ == '__main__':
@@ -151,11 +261,18 @@ if __name__ == '__main__':
        rename it to testsetassessment_group_subnumber.csv and upload to d2l folder.
        AND complete the model_completion google sheet to record it
     """
-    x = TestModel(features=('feature14', 'feature17', 'feature8'), classify=True, classifier='knn', c_var=1, k_fold=2) # used 7 features
-    #error = x.get_mae(debug=True)
-    pred_test = x.predict_test()
-    #print("{} with MAE: {}".format(x, error))
-    #from FileWriter import FileWriter
-    #print(pred_test.shape)
-    #w = FileWriter(file_name=x, data=pred_test)
-    #w.write()
+
+    x = TestModel(class_feature=('feature1','feature2', 'feature3', 'feature5','feature7','feature14','feature16'), classify=True, classifier='knn', c_var=1, k_fold=10)
+    f1ss = x.get_f1_only()
+    print(f1ss)
+    mae, f1ss = x.get_mae()
+    print(f1ss)
+    # error, score = x.get_mae()
+    # pred_test = x.predict_test()
+    # print("{} with MAE: {}".format(x, error))
+    # print("{} with F1: {}".format(x, score))
+    #
+    # from FileWriter import FileWriter
+    # print(pred_test.shape)
+    # w = FileWriter(file_name=x, data=pred_test)
+    # w.write()
