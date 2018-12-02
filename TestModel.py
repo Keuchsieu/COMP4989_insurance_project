@@ -8,6 +8,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn import tree
 import numpy as np
 
@@ -72,6 +73,8 @@ class TestModel:
             self.model = Ridge(alpha=m_alpha)
         elif model == 'Lasso':
             self.model = Lasso(alpha=m_alpha)
+        elif model == 'NN':
+            self.model = MLPRegressor(hidden_layer_sizes=(7, 7, 7))     # 3 layers, one neuron per feature
         else:
             self.model = LinearRegression()
         if poly_p != 1:  # polynomial feature if wanted
@@ -266,7 +269,7 @@ if __name__ == '__main__':
     f1ss = x.get_f1_only()
     print(f1ss)
     mae, f1ss = x.get_mae()
-    print(f1ss)
+    print(mae)
     # error, score = x.get_mae()
     # pred_test = x.predict_test()
     # print("{} with MAE: {}".format(x, error))
