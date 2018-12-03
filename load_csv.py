@@ -5,12 +5,14 @@ from sklearn.preprocessing import StandardScaler # used to prep data for NN
 
 class DataSet:
     def __init__(self):
-        ros = RandomOverSampler(random_state=0)
+        ros = RandomOverSampler(random_state=0) # best sampler
+        scaler = StandardScaler()
 
         self.training = pd.read_csv('./datasets/trainingset.csv')
         testset = pd.read_csv('./datasets/testset.csv')
         self.trainingX = self.training.drop(['rowIndex', 'ClaimAmount'], 1)  # dropping label column and index
-        # scaler.fit(self.trainingX)
+        # line below is to standardize data for Neural Networks
+        #scaler.fit(self.trainingX)
         self.trainingY = self.training['ClaimAmount']  # getting only label column
         self.testingX = testset.drop(['rowIndex'], 1)  # drop row index
         self.no_claims = self.training[self.training['ClaimAmount'] == 0]  # get the samples with no claims
@@ -23,10 +25,9 @@ class DataSet:
         self.mix_X = self.mix_X.append(self.claim_X)
         self.mix_Y = self.no_claim_Y[0:7000]
         self.mix_Y = self.mix_Y.append(self.claim_Y)
-        # print(self.trainingX)
-        # self.trainingX = pd.DataFrame(data=scaler.transform(self.trainingX), columns=['feature1', 'feature2', 'feature3','feature4','feature5','feature6','feature7','feature8','feature9','feature10','feature11', 'feature12','feature13','feature14', 'feature15', 'feature16', 'feature17', 'feature18'])
-        # print(self.trainingX)
-        self.X_resampled, self.Y_resampled = ros.fit_resample(self.get_trainX_pd(), self.changeToBinary())
+        # line below is to standardize data for Neural Networks
+        #self.trainingX = pd.DataFrame(data=scaler.transform(self.trainingX), columns=['feature1', 'feature2', 'feature3','feature4','feature5','feature6','feature7','feature8','feature9','feature10','feature11', 'feature12','feature13','feature14', 'feature15', 'feature16', 'feature17', 'feature18'])
+        self.X_resampled, self.Y_resampled = ros.fit_resample(self.get_trainX_pd(), self.changeToBinary())  # convert to oversampled data
 
     def get_training(self):
         return self.training
@@ -92,10 +93,10 @@ class DataSet:
         return self.mix_Y
 
     def changeToBinary(self):
-        newArr = []
+        new_arr = []
         for val in self.trainingY:
-            newArr.append(0 if val == 0 else 1)
-        return pd.DataFrame(data=newArr)
+            new_arr.append(0 if val == 0 else 1)
+        return pd.DataFrame(data=new_arr)
 
 
 if __name__ == '__main__':
