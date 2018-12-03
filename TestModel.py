@@ -9,13 +9,14 @@ from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import tree
+from joblib import dump, load
 import numpy as np
 
 
 class TestModel:
 
     def __init__(self, ohe=(0, 0), features='all', class_feature='all',
-                 classify=True, classifier='svc', c_var=1.0, model='Linear',
+                 classify=True, classifier='knn', c_var=1, model='Linear',
                  m_alpha=1, poly_p=1, k_fold=10):
         """
         Constructor of test model
@@ -37,6 +38,9 @@ class TestModel:
         self.k_fold = k_fold
         self.data = DataSet()
         self.y_train = self.data.get_trainY()
+        self.regression_feature = features
+        self.classify_feature = class_feature
+        self.fitted = False
         # modify features used in model, pre-processing
         if ohe != (0, 0):
             self.x_train_all = one_hot_encode(self.data.get_trainX_pd(), lower_limit=ohe[0], upper_limit=ohe[1])
@@ -121,6 +125,38 @@ class TestModel:
             prediction = self.model.predict(self.x_test)
             assert max(prediction) != 0
             return prediction
+
+    def train_model(self):
+        self.model.fit(self.x_train, self.y_train)
+        if self.classify:
+            y_class = []
+            for val in self.y_train:
+                y_class.append(0 if val == 0 else 1)
+            self.classifier.fit(self.x_train, y_class)
+        self.fitted = True
+
+    def predict_on_file(self, filename, debug=False):
+        if not self.fitted and not debug:
+            print("The model is not trained")
+            return None
+        feature_names = ('rowIndex', 'feature1', 'feature2', 'feature3', 'feature4', 'feature5', 'feature6',
+                         'feature7', 'feature8', 'feature9', 'feature10', 'feature11', 'feature12',
+                         'feature13', 'feature14', 'feature15', 'feature16', 'feature17', 'feature18',)
+        including_label = feature_names + ("ClaimAmount", )
+        import pandas as pd
+        all_feature = pd.read_csv(filename)
+        if len(list(all_feature)) == 19:
+            all_feature = pd.DataFrame(all_feature, columns=feature_names)
+        elif len(list(all_feature)) == 20:
+            all_feature = pd.DataFrame(all_feature, columns=including_label)
+
+        regression_feature = all_feature if self.regression_feature == 'all' else all_feature.loc[:, self.regression_feature]
+        class_feature = all_feature if self.classify_feature == 'all' else all_feature.loc[:, self.classify_feature]
+        prediction = self.model.predict(regression_feature)
+        if self.classify:
+            prediction *= self.classifier.predict(class_feature)
+        print(prediction)
+        return prediction
 
     def get_mae(self, debug=False):
         data_length = self.x_train.shape[0]
@@ -260,18 +296,9 @@ if __name__ == '__main__':
        rename it to testsetassessment_group_subnumber.csv and upload to d2l folder.
        AND complete the model_completion google sheet to record it
     """
+    # x = TestModel(features=("feature1", "feature2"), class_feature=("feature13", "feature14"))
+    # x.train_model()
+    x = load("model.joblib")
+    # dump(x, "model.joblib")
+    x.predict_on_file("./datasets/testset.csv", debug=True)
 
-    x = TestModel(class_feature=('feature1','feature2', 'feature3', 'feature5','feature7','feature14','feature16'), classify=True, classifier='knn', c_var=1, k_fold=10)
-    f1ss = x.get_f1_only()
-    print(f1ss)
-    mae, f1ss = x.get_mae()
-    print(f1ss)
-    # error, score = x.get_mae()
-    # pred_test = x.predict_test()
-    # print("{} with MAE: {}".format(x, error))
-    # print("{} with F1: {}".format(x, score))
-    #
-    # from FileWriter import FileWriter
-    # print(pred_test.shape)
-    # w = FileWriter(file_name=x, data=pred_test)
-    # w.write()
