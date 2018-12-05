@@ -138,15 +138,13 @@ class TestModel:
         return prediction
 
     def train_model(self):
+        print("model shape", self.x_class.shape)
         self.model.fit(self.x_train, self.y_train)
         if self.classify:
-            y_class = []
-            for val in self.y_train:
-                y_class.append(0 if val == 0 else 1)
-            self.classifier.fit(self.x_train, y_class)
+            self.classifier.fit(self.x_class, self.y_train_os)
         self.fitted = True
 
-    def predict_on_file(self, filename, debug=False):
+    def predict_on_file(self, filename='./competitionset.csv', debug=False):
         if not self.fitted and not debug:
             print("The model is not trained")
             return None
@@ -163,10 +161,12 @@ class TestModel:
 
         regression_feature = all_feature if self.regression_feature == 'all' else all_feature.loc[:, self.regression_feature]
         class_feature = all_feature if self.classify_feature == 'all' else all_feature.loc[:, self.classify_feature]
+        if debug:
+            print(regression_feature.shape)
+            print(class_feature.shape)
         prediction = self.model.predict(regression_feature)
         if self.classify:
             prediction *= self.classifier.predict(class_feature)
-        print(prediction)
         return prediction
 
     def get_mae(self, debug=False):
@@ -307,31 +307,26 @@ if __name__ == '__main__':
        rename it to testsetassessment_group_subnumber.csv and upload to d2l folder.
        AND complete the model_completion google sheet to record it
     """
-    # x = TestModel(features=("feature1", "feature2"), class_feature=("feature13", "feature14"))
-    # x.train_model()
-    x = load("model.joblib")
-    # dump(x, "model.joblib")
-    x.predict_on_file("./datasets/testset.csv", debug=True)
-
     # Current best model:
     #    Classification: Use ALL features but feature9, feature6, feature17, feature15, feature12, feature11, feature7
     #       with Random Forest and n_estimators = 115
     #    Prediction: Use features 'feature1', 'feature2', 'feature3', 'feature14', 'feature15', 'feature16'
     #       with Decision Tree Regressor and criterion = 'mae'
 
-    x = TestModel(features=('feature1', 'feature2', 'feature3','feature4', 'feature6','feature7', 'feature13', 'feature17','feature18','feature14', 'feature15', 'feature16'),
-                  class_feature=('feature1', 'feature2', 'feature3','feature4','feature5','feature8','feature10','feature13', 'feature14','feature16', 'feature18'),
-                  classify=True, classifier='rfc', c_var=4, model="Ridge", m_alpha=100000000000, k_fold=10)
-    #f1ss = x.get_f1_only()
-    #print("F1: ", f1ss)
-    mae, f1ss = x.get_mae()
-    print("MAE: ", mae)
-    # error, score = x.get_mae()
-    # pred_test = x.predict_test()
-    # print("{} with MAE: {}".format(x, error))
-    # print("{} with F1: {}".format(x, score))
-    #
-    # from FileWriter import FileWriter
-    # print(pred_test.shape)
-    # w = FileWriter(file_name=x, data=pred_test)
-    # w.write()
+    # x = TestModel(features=(  # 12 features
+    # 'feature1', 'feature2', 'feature3', 'feature4', 'feature6', 'feature7', 'feature13', 'feature17', 'feature18',
+    # 'feature14', 'feature15', 'feature16'),
+    #               class_feature=(  # 11 features
+    # 'feature1', 'feature2', 'feature3', 'feature4', 'feature5', 'feature8', 'feature10', 'feature13',
+    # 'feature14', 'feature16', 'feature18'),
+    #               classify=True, classifier='rfc', c_var=4, model="Ridge", m_alpha=100000000000, k_fold=10)
+    # x.train_model()
+    x = load("competition_model.joblib")
+    # dump(x, "competition_model.joblib")
+    pred = x.predict_on_file()
+    # print(pred)
+
+    from FileWriter import FileWriter
+    fw = FileWriter(data=pred)
+    fw.write()
+
