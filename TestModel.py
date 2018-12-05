@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn import tree
+from joblib import dump, load
 import numpy as np
 import pandas as pd
 
@@ -38,8 +39,15 @@ class TestModel:
         self.prediction = -1
         self.k_fold = k_fold
         self.data = DataSet()
+# deal with feature part
+        self.y_train = self.data.get_trainY()
+        self.regression_feature = features
+        self.classify_feature = class_feature
+        self.fitted = False
+# over sample part
         self.y_train_os = self.data.get_osY()   # get over-sampled data
         self.y_train_mae = self.data.get_trainY()   # get normal data
+
         # modify features used in model, pre-processing
         if ohe != (0, 0):
             self.x_train_all_mae = one_hot_encode(self.data.get_trainX_pd(), lower_limit=ohe[0], upper_limit=ohe[1])
@@ -128,6 +136,38 @@ class TestModel:
         self.classifier.fit(self.x_class, self.y_train_os)   # use over-sampled data
         prediction = self.classifier.predict(self.x_test) * self.model.predict(self.x_test)
         assert max(prediction) != 0
+        return prediction
+
+    def train_model(self):
+        print("model shape", self.x_class.shape)
+        self.model.fit(self.x_train, self.y_train)
+        if self.classify:
+            self.classifier.fit(self.x_class, self.y_train_os)
+        self.fitted = True
+
+    def predict_on_file(self, filename='./competitionset.csv', debug=False):
+        if not self.fitted and not debug:
+            print("The model is not trained")
+            return None
+        feature_names = ('rowIndex', 'feature1', 'feature2', 'feature3', 'feature4', 'feature5', 'feature6',
+                         'feature7', 'feature8', 'feature9', 'feature10', 'feature11', 'feature12',
+                         'feature13', 'feature14', 'feature15', 'feature16', 'feature17', 'feature18',)
+        including_label = feature_names + ("ClaimAmount", )
+        import pandas as pd
+        all_feature = pd.read_csv(filename)
+        if len(list(all_feature)) == 19:
+            all_feature = pd.DataFrame(all_feature, columns=feature_names)
+        elif len(list(all_feature)) == 20:
+            all_feature = pd.DataFrame(all_feature, columns=including_label)
+
+        regression_feature = all_feature if self.regression_feature == 'all' else all_feature.loc[:, self.regression_feature]
+        class_feature = all_feature if self.classify_feature == 'all' else all_feature.loc[:, self.classify_feature]
+        if debug:
+            print(regression_feature.shape)
+            print(class_feature.shape)
+        prediction = self.model.predict(regression_feature)
+        if self.classify:
+            prediction *= self.classifier.predict(class_feature)
         return prediction
 
     def get_mae(self, debug=False):
@@ -268,26 +308,25 @@ if __name__ == '__main__':
        rename it to testsetassessment_group_subnumber.csv and upload to d2l folder.
        AND complete the model_completion google sheet to record it
     """
-
     # Current best model:
     #    Classification: Use ALL features but feature9, feature6, feature17, feature15, feature12, feature11, feature7
     #       with Random Forest and n_estimators = 115
     #    Prediction: Use features 'feature1', 'feature2', 'feature3', 'feature14', 'feature15', 'feature16'
     #       with Decision Tree Regressor and criterion = 'mae'
 
-    x = TestModel(features=('feature1', 'feature2', 'feature3','feature4', 'feature6','feature7', 'feature13', 'feature17','feature18','feature14', 'feature15', 'feature16'),
-                  class_feature=('feature1', 'feature2', 'feature3','feature4','feature5','feature8','feature10','feature13', 'feature14','feature16', 'feature18'),
-                  classify=True, classifier='rfc', c_var=4, model="Ridge", m_alpha=100000000000, k_fold=10)
-    f1ss = x.get_f1_only()
-    print("F1: ", f1ss)
-    mae, f1ss = x.get_mae()
-    print("MAE: ", mae)
-    # error, score = x.get_mae()
-    pred_test = x.predict_test()
-    # print("{} with MAE: {}".format(x, error))
-    # print("{} with F1: {}".format(x, score))
-    #
+    # x = TestModel(features=(  # 12 features
+    # 'feature1', 'feature2', 'feature3', 'feature4', 'feature6', 'feature7', 'feature13', 'feature17', 'feature18',
+    # 'feature14', 'feature15', 'feature16'),
+    #               class_feature=(  # 11 features
+    # 'feature1', 'feature2', 'feature3', 'feature4', 'feature5', 'feature8', 'feature10', 'feature13',
+    # 'feature14', 'feature16', 'feature18'),
+    #               classify=True, classifier='rfc', c_var=4, model="Ridge", m_alpha=100000000000, k_fold=10)
+    # x.train_model()
+    x = load("competition_model.joblib")
+    # dump(x, "competition_model.joblib")
+    pred = x.predict_on_file()
+    # print(pred)
+
     from FileWriter import FileWriter
-    # print(pred_test.shape)
-    w = FileWriter(file_name=x, data=pred_test)
-    w.write()
+    fw = FileWriter(data=pred)
+    fw.write()

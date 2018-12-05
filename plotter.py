@@ -41,7 +41,7 @@ class Plotter:
         plt.title(feature_name + " Bar Chart")
         plt.show()
 
-    def visualize_scatter_plot(self, feature_name, x_label, y_label, label_name, data=None) :
+    def visualize_scatter_plot(self, feature_name, x_label, y_label, label_name=None, data=None) :
         """
 
         Create a scatter plot of the specified feature.
@@ -56,7 +56,15 @@ class Plotter:
             feature = data.get_trainX_pd().loc[:, feature_name]
         else:
             feature = self.data.get_trainX_pd().loc[:, feature_name]
-        plt.scatter(feature, label_name)
+        if not label_name:
+            label_name = self.data.get_trainY_pd()
+        colors = []
+        for i in label_name:
+            if i == 0:
+                colors.append('C0')
+            else:
+                colors.append('C1')
+        plt.scatter(feature, label_name, c=colors)
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.title(feature_name + " Scatter Plot")
@@ -112,3 +120,10 @@ class Plotter:
     #     elif type == "hist":
     #         return self.visualizeHistogram(feature, x_label, y_label)
     #     return self.visualizeScatterPlot(feature, x_label, y_label, label)
+
+if __name__ == '__main__':
+    figures = Plotter()
+    from load_csv import DataSet
+    names = DataSet().get_col_names()
+    for name in names:
+        figures.visualize_scatter_plot(name, "Feature Value", "ClaimAmount")

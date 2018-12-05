@@ -3,9 +3,9 @@ import numpy as np
 
 
 class FileWriter:
-    def __init__(self, file_name='test', data=[1,2,3]):
+    def __init__(self, file_name='predictedclaimamount', data=[1,2,3]):
         self.col_names = ['rowIndex', 'ClaimAmount']
-        self.file = os.path.join('./predictions/', file_name + '.csv')
+        self.file = os.path.join('./', file_name + '.csv')
         self.data = np.array(data)
 
     def write(self):
