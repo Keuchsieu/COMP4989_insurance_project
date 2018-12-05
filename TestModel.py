@@ -17,7 +17,7 @@ import pandas as pd
 
 class TestModel:
 
-    def __init__(self, ohe=(0, 0), features='all', class_feature='all',
+    def __init__(self, ohe=(0,0), features='all', class_feature='all',
                  classify=True, classifier='svc', c_var=1.0, model='Ridge',
                  m_alpha=1000000, poly_p=1, k_fold=10):
         """
@@ -50,7 +50,8 @@ class TestModel:
 
         # modify features used in model, pre-processing
         if ohe != (0, 0):
-            self.x_train_all = one_hot_encode(self.data.get_trainX_pd(), lower_limit=ohe[0], upper_limit=ohe[1])
+            self.x_train_all_mae = one_hot_encode(self.data.get_trainX_pd(), lower_limit=ohe[0], upper_limit=ohe[1])
+            self.x_train_all_os = self.data.get_osX()
             self.x_test_all = one_hot_encode(self.data.get_testX_pd())
             self.model_name += "_L{}U{}".format(ohe[0], ohe[1])
         else:
@@ -131,8 +132,8 @@ class TestModel:
 
     def predict_test(self):
         # fit the entire training sets
-        self.model.fit(self.x_train_all_mae, self.y_train_mae)  # use normal data
-        self.classifier.fit(self.x_train_all_os, self.y_train_os)   # use over-sampled data
+        self.model.fit(self.x_train, self.y_train_mae)  # use normal data
+        self.classifier.fit(self.x_class, self.y_train_os)   # use over-sampled data
         prediction = self.classifier.predict(self.x_test) * self.model.predict(self.x_test)
         assert max(prediction) != 0
         return prediction
@@ -329,4 +330,3 @@ if __name__ == '__main__':
     from FileWriter import FileWriter
     fw = FileWriter(data=pred)
     fw.write()
-
