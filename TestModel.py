@@ -16,7 +16,7 @@ import pandas as pd
 
 class TestModel:
 
-    def __init__(self, ohe=(0, 0), features='all', class_feature='all',
+    def __init__(self, ohe=(0,0), features='all', class_feature='all',
                  classify=True, classifier='svc', c_var=1.0, model='Ridge',
                  m_alpha=1000000, poly_p=1, k_fold=10):
         """
@@ -42,7 +42,8 @@ class TestModel:
         self.y_train_mae = self.data.get_trainY()   # get normal data
         # modify features used in model, pre-processing
         if ohe != (0, 0):
-            self.x_train_all = one_hot_encode(self.data.get_trainX_pd(), lower_limit=ohe[0], upper_limit=ohe[1])
+            self.x_train_all_mae = one_hot_encode(self.data.get_trainX_pd(), lower_limit=ohe[0], upper_limit=ohe[1])
+            self.x_train_all_os = self.data.get_osX()
             self.x_test_all = one_hot_encode(self.data.get_testX_pd())
             self.model_name += "_L{}U{}".format(ohe[0], ohe[1])
         else:
@@ -123,8 +124,8 @@ class TestModel:
 
     def predict_test(self):
         # fit the entire training sets
-        self.model.fit(self.x_train_all_mae, self.y_train_mae)  # use normal data
-        self.classifier.fit(self.x_train_all_os, self.y_train_os)   # use over-sampled data
+        self.model.fit(self.x_train, self.y_train_mae)  # use normal data
+        self.classifier.fit(self.x_class, self.y_train_os)   # use over-sampled data
         prediction = self.classifier.predict(self.x_test) * self.model.predict(self.x_test)
         assert max(prediction) != 0
         return prediction
@@ -277,16 +278,16 @@ if __name__ == '__main__':
     x = TestModel(features=('feature1', 'feature2', 'feature3','feature4', 'feature6','feature7', 'feature13', 'feature17','feature18','feature14', 'feature15', 'feature16'),
                   class_feature=('feature1', 'feature2', 'feature3','feature4','feature5','feature8','feature10','feature13', 'feature14','feature16', 'feature18'),
                   classify=True, classifier='rfc', c_var=4, model="Ridge", m_alpha=100000000000, k_fold=10)
-    #f1ss = x.get_f1_only()
-    #print("F1: ", f1ss)
+    f1ss = x.get_f1_only()
+    print("F1: ", f1ss)
     mae, f1ss = x.get_mae()
     print("MAE: ", mae)
     # error, score = x.get_mae()
-    # pred_test = x.predict_test()
+    pred_test = x.predict_test()
     # print("{} with MAE: {}".format(x, error))
     # print("{} with F1: {}".format(x, score))
     #
-    # from FileWriter import FileWriter
+    from FileWriter import FileWriter
     # print(pred_test.shape)
-    # w = FileWriter(file_name=x, data=pred_test)
-    # w.write()
+    w = FileWriter(file_name=x, data=pred_test)
+    w.write()
