@@ -8,16 +8,18 @@ from sklearn.pipeline import make_pipeline
 from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn import tree
 from joblib import dump, load
 import numpy as np
+import pandas as pd
 
 
 class TestModel:
 
     def __init__(self, ohe=(0, 0), features='all', class_feature='all',
-                 classify=True, classifier='knn', c_var=1, model='Linear',
-                 m_alpha=1, poly_p=1, k_fold=10):
+                 classify=True, classifier='svc', c_var=1.0, model='Ridge',
+                 m_alpha=1000000, poly_p=1, k_fold=10):
         """
         Constructor of test model
         :param ohe: Boolean, if want to one hot encode
@@ -37,34 +39,45 @@ class TestModel:
         self.prediction = -1
         self.k_fold = k_fold
         self.data = DataSet()
+# deal with feature part
         self.y_train = self.data.get_trainY()
         self.regression_feature = features
         self.classify_feature = class_feature
         self.fitted = False
+# over sample part
+        self.y_train_os = self.data.get_osY()   # get over-sampled data
+        self.y_train_mae = self.data.get_trainY()   # get normal data
+
         # modify features used in model, pre-processing
         if ohe != (0, 0):
             self.x_train_all = one_hot_encode(self.data.get_trainX_pd(), lower_limit=ohe[0], upper_limit=ohe[1])
             self.x_test_all = one_hot_encode(self.data.get_testX_pd())
             self.model_name += "_L{}U{}".format(ohe[0], ohe[1])
         else:
-            self.x_train_all = self.data.get_trainX_pd()
+            self.x_train_all_mae = self.data.get_trainX_pd()    # get normal data
+            self.x_train_all_os = self.data.get_osX()   # get over-sampled data
             self.x_test_all = self.data.get_testX_pd()
             self.model_name += "_NON"
         if features == 'all':
-            self.x_train = np.array(self.x_train_all)
+            self.x_train = np.array(self.x_train_all_mae)
             self.x_test = np.array(self.x_test_all)
             self.model_name += "_allFeature"
-
         else:
-            self.x_train = np.array(self.x_train_all.loc[:, features])
+            self.x_train = np.array(self.x_train_all_mae.loc[:, features])
             self.x_test = np.array(self.x_test_all.loc[:, features])
             for name in features:
                 self.model_name += "_" + name
         # classify with different feature set
+        # convert np.array (returned from oversampling method) to Pandas DF
+        self.x_train_all_os = pd.DataFrame(data=self.x_train_all_os,
+                                           columns=['feature1', 'feature2', 'feature3', 'feature4', 'feature5',
+                                                    'feature6', 'feature7', 'feature8', 'feature9', 'feature10',
+                                                    'feature11', 'feature12', 'feature13', 'feature14', 'feature15',
+                                                    'feature16', 'feature17', 'feature18'])
         if class_feature == 'all':
-            self.x_class = np.array(self.x_train_all)
+            self.x_class = np.array(self.x_train_all_os)
         else:
-            self.x_class = np.array(self.x_train_all.loc[:, class_feature])
+            self.x_class = np.array(self.x_train_all_os.loc[:, class_feature])
 
         # check test set size
         if features != 'all':
@@ -75,6 +88,10 @@ class TestModel:
             self.model = Ridge(alpha=m_alpha)
         elif model == 'Lasso':
             self.model = Lasso(alpha=m_alpha)
+        elif model == 'NN': # if you wish to use NN, use standardized data (I didn't re-add in here b/c NN took long time and got worse
+            self.model = MLPRegressor(hidden_layer_sizes=(12, 12, 12), alpha=c_var, max_iter=2000)     # 3 layers, one neuron per feature (7)
+        elif model == 'tree':
+            self.model = tree.DecisionTreeRegressor(criterion='mae')
         else:
             self.model = LinearRegression()
         if poly_p != 1:  # polynomial feature if wanted
@@ -95,7 +112,9 @@ class TestModel:
         elif classifier == 'tree':
             self.classifier = tree.DecisionTreeClassifier()
         elif classifier == 'rfc':
-            self.classifier = RandomForestClassifier(n_estimators=c_var)
+            self.classifier = RandomForestClassifier(n_estimators=115, criterion='entropy', random_state=1)
+        elif classifier == 'NN':    # if you wish to use NN, use standardized data (I didn't re-add in here b/c NN took long time and got worse results
+            self.classifier = MLPClassifier(hidden_layer_sizes=(7, 7, 7))   # 3 layers with 7 neurons each (one for each feature)
 
     def __str__(self):
         """
@@ -112,19 +131,11 @@ class TestModel:
 
     def predict_test(self):
         # fit the entire training sets
-        self.model.fit(self.x_train, self.y_train)
-        if self.classify:
-            y_class = []
-            for val in self.y_train:
-                y_class.append(0 if val == 0 else 1)
-            self.classifier.fit(self.x_train, y_class)
-            prediction = self.classifier.predict(self.x_test) * self.model.predict(self.x_test)
-            assert max(prediction) != 0
-            return prediction
-        else:
-            prediction = self.model.predict(self.x_test)
-            assert max(prediction) != 0
-            return prediction
+        self.model.fit(self.x_train_all_mae, self.y_train_mae)  # use normal data
+        self.classifier.fit(self.x_train_all_os, self.y_train_os)   # use over-sampled data
+        prediction = self.classifier.predict(self.x_test) * self.model.predict(self.x_test)
+        assert max(prediction) != 0
+        return prediction
 
     def train_model(self):
         self.model.fit(self.x_train, self.y_train)
@@ -179,11 +190,11 @@ class TestModel:
                     # concatenate entire row
                     x_cv.append(self.x_train[j, :])
                     # concatenate one value
-                    y_cv.append(self.y_train[j])
+                    y_cv.append(self.y_train_mae[j])
                     x_cv_class.append(self.x_class[j, :])
                 else:
                     x_train.append(self.x_train[j, :])
-                    y_train.append(self.y_train[j])
+                    y_train.append(self.y_train_mae[j])
                     x_class.append(self.x_class[j, :])
             x_cv = np.array(x_cv)
             y_cv = np.array(y_cv)
@@ -230,7 +241,7 @@ class TestModel:
         return kfold_mae, kfold_f1
 
     def get_f1_only(self, debug=False):
-        data_length = self.x_train.shape[0]
+        data_length = self.x_class.shape[0]
         chunk = int(data_length / self.k_fold)
         scores = []
         for i in range(self.k_fold):
@@ -241,10 +252,10 @@ class TestModel:
             for j in range(data_length):
                 if int(j / chunk) == i:
                     x_cv_class.append(self.x_class[j, :])
-                    y_cv.append(self.y_train[j])
+                    y_cv.append(self.y_train_os[j])
                 else:
                     x_class.append(self.x_class[j, :])
-                    y_train.append(self.y_train[j])
+                    y_train.append(self.y_train_os[j])
             x_cv_class = np.array(x_cv_class)
             y_cv = np.array(y_cv)
             x_class = np.array(x_class)
@@ -302,3 +313,25 @@ if __name__ == '__main__':
     # dump(x, "model.joblib")
     x.predict_on_file("./datasets/testset.csv", debug=True)
 
+    # Current best model:
+    #    Classification: Use ALL features but feature9, feature6, feature17, feature15, feature12, feature11, feature7
+    #       with Random Forest and n_estimators = 115
+    #    Prediction: Use features 'feature1', 'feature2', 'feature3', 'feature14', 'feature15', 'feature16'
+    #       with Decision Tree Regressor and criterion = 'mae'
+
+    x = TestModel(features=('feature1', 'feature2', 'feature3','feature4', 'feature6','feature7', 'feature13', 'feature17','feature18','feature14', 'feature15', 'feature16'),
+                  class_feature=('feature1', 'feature2', 'feature3','feature4','feature5','feature8','feature10','feature13', 'feature14','feature16', 'feature18'),
+                  classify=True, classifier='rfc', c_var=4, model="Ridge", m_alpha=100000000000, k_fold=10)
+    #f1ss = x.get_f1_only()
+    #print("F1: ", f1ss)
+    mae, f1ss = x.get_mae()
+    print("MAE: ", mae)
+    # error, score = x.get_mae()
+    # pred_test = x.predict_test()
+    # print("{} with MAE: {}".format(x, error))
+    # print("{} with F1: {}".format(x, score))
+    #
+    # from FileWriter import FileWriter
+    # print(pred_test.shape)
+    # w = FileWriter(file_name=x, data=pred_test)
+    # w.write()
