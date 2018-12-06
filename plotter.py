@@ -56,18 +56,23 @@ class Plotter:
             feature = data.get_trainX_pd().loc[:, feature_name]
         else:
             feature = self.data.get_trainX_pd().loc[:, feature_name]
-        if not label_name:
+        if label_name:
+            label_name = self.data.get_trainX_pd().loc[:, label_name]
+        else:
             label_name = self.data.get_trainY_pd()
         colors = []
-        for i in label_name:
+        for i in self.data.get_trainY_pd():
             if i == 0:
                 colors.append('C0')
             else:
                 colors.append('C1')
-        plt.scatter(feature, label_name, c=colors)
+        plt.scatter(feature, label_name, c=colors, label='NoClaim')
+        import matplotlib.patches as mpp
+        plt.legend(handles=[mpp.Patch(color='C1', label='Claim'), mpp.Patch(color='C0', label='NoClaim')])
+        # plt.legend()
         plt.xlabel(x_label)
         plt.ylabel(y_label)
-        plt.title(feature_name + " Scatter Plot")
+        plt.title(str(x_label) + " and " + str(y_label) + " Scatter Plot")
         plt.show()
 
     def visualize_histogram(self, feature_name, x_label, y_label, data=None, bin_num=10) :
@@ -125,5 +130,7 @@ if __name__ == '__main__':
     figures = Plotter()
     from load_csv import DataSet
     names = DataSet().get_col_names()
-    for name in names:
-        figures.visualize_scatter_plot(name, "Feature Value", "ClaimAmount")
+    import itertools
+    combies = itertools.combinations(names, 2)
+    for com in combies:
+        figures.visualize_scatter_plot(feature_name=com[0], x_label=com[0], y_label=com[1], label_name=com[1])

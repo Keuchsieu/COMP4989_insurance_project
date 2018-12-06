@@ -321,12 +321,21 @@ if __name__ == '__main__':
     # 'feature14', 'feature16', 'feature18'),
     #               classify=True, classifier='rfc', c_var=4, model="Ridge", m_alpha=100000000000, k_fold=10)
     # x.train_model()
-    x = load("competition_model.joblib")
-    # dump(x, "competition_model.joblib")
-    pred = x.predict_on_file()
-    # print(pred)
+    # x = load("competition_model.joblib")
+    # # dump(x, "competition_model.joblib")
+    # pred = x.predict_on_file()
+    # # print(pred)
+    #
+    # from FileWriter import FileWriter
+    # fw = FileWriter(data=pred)
+    # fw.write()
 
-    from FileWriter import FileWriter
-    fw = FileWriter(data=pred)
-    fw.write()
+    data = DataSet()
+    all_features = data.get_col_names()
+    import itertools
+    all_2_combie = itertools.combinations(all_features, 2)
+    for com in all_2_combie:
+        x = TestModel(class_feature=com, classify=True, classifier='knn', c_var=1)
+        f1 = x.get_f1_only()
+        print("combination: {}, f1 score: {}".format(com, f1))
 
